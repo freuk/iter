@@ -1,0 +1,6 @@
+tags
+demo/Demo
+*.hi
+*.o
+result*
+dist-*

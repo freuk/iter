@@ -1,0 +1,6 @@
+feedback:
+  execute: ["hlint", "{file}"]
+  execute: ["ghc", "--make", "{file}"]
+
+# model: "llama2-70b-4096"
+model: "mixtral-8x7b-32768"

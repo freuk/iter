@@ -1,0 +1,8 @@
+feedback:
+  execute: ["python", "{file}"]
+  country: ["python", "{file}", "--country=USA"]
+  test: ["python", "{file}", "--test"]
+  pylint: ["pylint", "{file}"]
+
+# model: "llama2-70b-4096"
+model: "mixtral-8x7b-32768"
