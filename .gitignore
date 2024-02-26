@@ -1,0 +1,7 @@
+tags
+.envrc
+demo/Demo
+*.hi
+*.o
+result*
+dist-*

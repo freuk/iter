@@ -1,0 +1,12 @@
+model: "mixtral-8x7b-32768"
+# model: "llama2-70b-4096"
+
+# these available templates get replaced in strings: {file}, {basename}
+feedback:
+  # [<cmd>, <arg1>, <arg2>, ..]
+  execute: ["python", "{file}"]
+  country: ["python", "{file}", "--country=USA"]
+  pylint: ["pylint", "{file}"]
+
+# set to true if you have an old-style 'request_manager' token.
+legacy-api: false
