@@ -34,6 +34,7 @@ in rec {
       pkgs.ormolu
       pkgs.just
       pkgs.pylint
+      pkgs.black
     ];
   };
 

@@ -1,6 +1,7 @@
 feedback:
   execute: ["python", "{file}"]
   country: ["python", "{file}", "--country=USA"]
+  country: ["python", "{file}", "--currency=USD"]
   test: ["python", "{file}", "--test"]
   pylint: ["pylint", "{file}"]
 
