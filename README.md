@@ -7,7 +7,7 @@ of a REPL with free-form text that lets the user quickly iterate on diffs,
 pipe feedback (e.g. compilers and test suites) into the LLM, and trigger
 [self-reflection](https://github.com/rxlqn/awesome-llm-self-reflection).
 
-[![iter - demo](https://cdn.loom.com/sessions/thumbnails/e8c262e754fa4468962a1eec444ab8e3-with-play.gif)](https://www.loom.com/share/e8c262e754fa4468962a1eec444ab8e3 "iter - demo")
+[![iter - demo](https://cdn.loom.com/sessions/thumbnails/e8c262e754fa4468962a1eec444ab8e3-with-play.gif)](https://www.loom.com/share/e8c262e754fa4468962a1eec444ab8e3?sid=4696ed71-eba7-4105-ae0e-a088f1c90d43 "iter - demo")
 
 ## usage
 
