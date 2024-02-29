@@ -295,18 +295,21 @@ proposeMore :: Text -> Int -> Text -> IterT ()
 proposeMore instructions i new = do
   Just old <- getPrevious i
   opts <- lift ask
-  newContent <- case extractBlock new of
-    Nothing -> do
-      outputDiff opts old new
-      pure new
-    Just (before, block, after) -> do
-      outputText $ blue before
-      outputDiff opts old block
-      outputText $ blue after
-      pure block
+  newContent <- outputCurrentDiffAndReturnBlock opts new old
   dumpPerformanceLogs (Just "")
   lift $ modify ((fmap . fmap) (NE.cons newContent))
   propose instructions (i + 1)
+
+outputCurrentDiffAndReturnBlock :: Opts a -> Text -> Text -> IterT Text
+outputCurrentDiffAndReturnBlock opts new old = case extractBlock new of
+  Nothing -> do
+    outputDiff opts old new
+    pure new
+  Just (before, block, after) -> do
+    outputText $ blue before
+    outputDiff opts old block
+    outputText $ blue after
+    pure block
 
 propose :: Text -> Int -> IterT ()
 propose _ 0 = pass
@@ -316,6 +319,7 @@ propose instructions numIters = do
   currentVersion <- getVersion
   Just old <- getPrevious numIters
   mFilePath <- getFilePath
+  opts <- lift ask
 
   minput <-
     H.getInputLine
@@ -327,7 +331,9 @@ propose instructions numIters = do
           "] accept/a discard/d edit/e reflexion/r block/b undo/u xplain/x 🔁 "
         ]
   whenJust minput $ \raw -> case NE.nonEmpty (List.words raw) of
-    Nothing -> propose instructions numIters
+    Nothing -> do
+      void $ outputCurrentDiffAndReturnBlock opts new old
+      propose instructions numIters
     Just (inp :| [])
       | inp `List.elem` ["accept", "a"] -> do
           maybe pass (write new) iterContentPath
@@ -337,7 +343,7 @@ propose instructions numIters = do
           void $ mapOrComplainAndReturnOld outputStrLnCurrent
       | inp `List.elem` ["xplain", "x"] -> do
           outputText ""
-          explain old new >>= outputText . blue
+          explainDiff old new >>= outputText . blue
           dumpPerformanceLogs (Just "")
           propose instructions numIters
       | inp `List.elem` ["edit", "e"] ->
@@ -358,7 +364,10 @@ propose instructions numIters = do
                 >>= proposeMore instructions numIters
       | inp `List.elem` ["reflexion", "r"] ->
           thinkMore instructions old new >>= proposeMore instructions numIters
-      | inp `List.elem` ["undo", "u"] -> undo >> propose instructions (numIters - 1)
+      | inp `List.elem` ["undo", "u"] -> do
+          undo
+          void $ outputCurrentDiffAndReturnBlock opts new old
+          propose instructions (numIters - 1)
     Just _ -> oneProposalStep (T.pack raw) old new >>= proposeMore instructions numIters
 
 extractBlock :: Text -> Maybe (Text, Text, Text)
@@ -401,7 +410,7 @@ loop = H.handleInterrupt loop $ H.withInterrupt $ do
           . mconcat
           $ [ "[",
               show version,
-              "] :quit/q, :reload/r :write/w, :wq/x :discuss/d :feedback/f ",
+              "] :quit/q, :reload/r :write/w, :explain/x :discuss/d :feedback/f ",
               ":undo/u 🔁 "
             ]
       whenJust minput $ \(List.words -> args) -> case args of
@@ -411,12 +420,10 @@ loop = H.handleInterrupt loop $ H.withInterrupt $ do
         (":reload" : _) -> reload >> loop
         [":w"] -> write (NE.head iterHistory) iterContentPath >> loop
         [":write"] -> write (NE.head iterHistory) iterContentPath >> loop
-        [":wq"] -> write (NE.head iterHistory) iterContentPath >> quit
-        [":x"] -> write (NE.head iterHistory) iterContentPath >> quit
-        (":wq" : _) -> error ":writequit/:wq/:x takes no argument" >> loop
-        (":x" : _) -> error ":writequit/:wq/:x takes no argument" >> loop
         (":w" : _) -> error ":write/:w takes no argument" >> loop
         (":write" : _) -> error ":write/:w takes no argument" >> loop
+        [":explain"] -> explain >> loop
+        [":x"] -> explain >> loop
         [":discuss"] -> error ":discuss/d needs to be followed by a prompt" >> loop
         [":d"] -> error ":discuss/d needs to be followed by a prompt" >> loop
         (":discuss" : xs) -> discuss (unwords $ T.pack <$> xs) >> loop
@@ -545,6 +552,9 @@ intend instructions = do
     go = mapOrComplainAndReturnOld (oneInstructionStep instructions)
     cancelIntention = outputText "Cancelled" >> pure Nothing
 
+explain :: IterT ()
+explain = discuss "Explain what this program does."
+
 discuss :: Text -> IterT ()
 discuss prompt = do
   getHistoryHead >>= \case
@@ -638,8 +648,8 @@ oneDiscussionStep prompt code = do
         "Answer in TWO sentences and 50 words MAXIMUM."
       ]
 
-explain :: Text -> Text -> IterT Text
-explain = discussDiff "Your task is to describe these changes."
+explainDiff :: Text -> Text -> IterT Text
+explainDiff = discussDiff "Your task is to describe these changes."
 
 discussDiff :: Text -> Text -> Text -> IterT Text
 discussDiff instructions old new = do
@@ -706,6 +716,7 @@ thinkMore instructions code new = do
         <> styleGuidelines
         <> btwFileNameIs mFilePath
 
+-- TODO: Move away from request_manager, to the OpenAI API.
 llm :: [(Text, Text)] -> [Text] -> [Text] -> IterT Text
 llm historyMessages (unlines -> sysPrompt) (unlines -> userPrompt) = do
   request <- do
