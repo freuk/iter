@@ -7,41 +7,12 @@ of a REPL with free-form text that lets the user quickly iterate on diffs,
 pipe feedback (e.g. compilers and test suites) into the LLM, and trigger
 [self-reflection](https://github.com/rxlqn/awesome-llm-self-reflection).
 
-*diff view, basic editing tasks*
-[![asciicast](https://asciinema.org/a/643898.svg)](https://asciinema.org/a/643898)
-
-*first demo*
-[![asciicast](https://asciinema.org/a/yylhwNUs5WAfSgicOpV3dOkhg.svg)](https://asciinema.org/a/yylhwNUs5WAfSgicOpV3dOkhg)
-
-<details open>
-<summary>Hello</summary>
-
-```
-# todo: remove this code block before sending to github
-GROQ_SECRET_ACCESS_KEY=...
-cd demo
-asciinema rec
-ls
-cat demo.yml
-iter --cfg=demo.yml demo.py
-:x
-add --currency capability to filter by currency
-a
-also remove the function to load customers a from a file
-a
-add a '--test' option that triggers unit tests
-a
-:f
-:f pylint
-a
-improve various software engineering aspects, but don't make the file longer.
-r
-:f execute
-:f execute
-```
-
-</details>
-
+<div style="position: relative; padding-bottom: 55.29953917050692%; height:
+0;"><iframe
+src="https://www.loom.com/embed/e8c262e754fa4468962a1eec444ab8e3?sid=fe031b4b-b0df-47aa-a3bf-f0b6b1be2a9d"
+frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen
+style="position: absolute; top: 0; left: 0; width: 100%; height:
+100%;"></iframe></div>
 
 ## usage
 
