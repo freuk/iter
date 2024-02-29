@@ -738,13 +738,14 @@ llm historyMessages (unlines -> sysPrompt) (unlines -> userPrompt) = do
   t0 <- liftIO Time.getCurrentTime
   resp <- HTTP.getResponseBody <$> HTTP.httpLBS request
   t1 <- liftIO Time.getCurrentTime
+  model <- optsModel <$> lift ask
 
   let results =
         catMaybes <$> fmap (Aeson.decode @(Result Content)) . C8.lines $ resp
       perf =
         catMaybes <$> fmap (Aeson.decode @(Result Stats)) . C8.lines $ resp
 
-      perfLogs = maybe [] ((: []) . showPerf t0 t1 . stats . result) (head perf)
+      perfLogs = maybe [] ((: []) . showPerf model t0 t1 . stats . result) (head perf)
 
       final = mconcat (content . result <$> results)
 
@@ -799,12 +800,13 @@ data PerformanceStats = PerformanceStats
   deriving stock (Show, Generic)
   deriving anyclass (Aeson.FromJSON)
 
-showPerf :: Time.UTCTime -> Time.UTCTime -> PerformanceStats -> Text
-showPerf t0 t1 PerformanceStats {timeGenerated, tokensGenerated, timeProcessed} =
+showPerf :: Text -> Time.UTCTime -> Time.UTCTime -> PerformanceStats -> Text
+showPerf model t0 t1 PerformanceStats {timeGenerated, tokensGenerated, timeProcessed} =
   T.pack
     $ Printf.printf
-      "%0.3fs Tokens/s | total: %ss 💤queued for %ss 👂input: %0.3fs 💬gen: %0.3fs"
+      "%0.3fs Tokens/s | %s | total: %ss 💤queued for %ss 👂input: %0.3fs 💬gen: %0.3fs"
       (fromInteger (toInteger tokensGenerated) / timeGenerated)
+      model
       (showDiffTime requestTime)
       (showDiffTime queueTime)
       timeProcessed
