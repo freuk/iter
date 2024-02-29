@@ -11,13 +11,10 @@ pipe feedback (e.g. compilers and test suites) into the LLM, and trigger
 <div>
     <a href="https://www.loom.com/share/e8c262e754fa4468962a1eec444ab8e3">
           <p>iter - demo - Watch Video</p>
-              </a>
-                  <a
-href="https://www.loom.com/share/e8c262e754fa4468962a1eec444ab8e3">
-      <img style="max-width:300px;"
-src="https://cdn.loom.com/sessions/thumbnails/e8c262e754fa4468962a1eec444ab8e3-1709239738919-with-play.gif">
+          </a> <a href="https://www.loom.com/share/e8c262e754fa4468962a1eec444ab8e3">
+      <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/e8c262e754fa4468962a1eec444ab8e3-1709239738919-with-play.gif">
     </a>
-      </div>
+</div>
 
 ## usage
 
