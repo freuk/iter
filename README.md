@@ -10,6 +10,8 @@ with free-form text that lets the user quickly iterate on diffs and pipe
 feedback (e.g. compilers and test suites) into the LLM before triggering
 [self-reflection](https://github.com/rxlqn/awesome-llm-self-reflection).
 
+[![Video demo](https://img.youtube.com/vi/eR855VNPjhk/0.jpg)](https://www.youtube.com/watch?v=eR855VNPjhk)
+
 ## usage
 
 * [Create an account and generate your API key](https://console.groq.com) from Groq!
