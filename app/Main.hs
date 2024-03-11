@@ -603,6 +603,16 @@ llmOpenAiApi historyMessages (unlines -> sysPrompt) (unlines -> userPrompt) = do
   case Aeson.decode @OpenAiResult resp of
     Just result@OpenAiResult {choices} -> case head choices of
       Just Choice {message} -> do
+        let logLlmCalls logFile = for_
+              [ ("s", yellow sysPrompt),
+                ("u", blue userPrompt),
+                ("r", content message)
+              ]
+              $ \(prefix, content) ->
+                appendFile logFile $ indentWith (prefix <> ":") $ content <> "\n"
+
+        lift ask >>= maybe pass (liftIO . logLlmCalls) . optsLogLlm
+
         pushPerf
           [ showPerf
               model
