@@ -11,3 +11,7 @@ feedback:
 
 # set to true if you have an old-style 'request_manager' token.
 legacy-api: false
+
+# define this if you'd like to log the full LLM interaction sequence to a
+# file.
+# log-llm: "/tmp/iter.log"
