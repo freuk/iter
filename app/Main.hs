@@ -1,5 +1,4 @@
 {-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -7,6 +6,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -31,6 +31,7 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as Map (assocs, lookup)
 import Data.String (String)
 import qualified Data.Text as T (pack, replace, unpack)
+import qualified Data.Time.Clock.POSIX as Time (getCurrentTime)
 import qualified Data.Yaml as Yaml (decodeFileThrow)
 import Legacy
 import qualified Network.HTTP.Simple as HTTP
@@ -92,9 +93,9 @@ spawnProcess (T.unpack -> cmd) (fmap T.unpack -> args) =
 
 parserInfo :: OA.ParserInfo (FilePath, Maybe FilePath)
 parserInfo =
-  OA.info (optionParser <**> OA.helper)
-    $ OA.fullDesc
-    <> OA.header "llm-based iteration tool."
+  OA.info (optionParser <**> OA.helper) $
+    OA.fullDesc
+      <> OA.header "llm-based iteration tool."
 
 optionParser :: OA.Parser (FilePath, Maybe FilePath)
 optionParser = do
@@ -197,8 +198,8 @@ propose instructions numIters = do
   opts <- lift ask
 
   minput <-
-    H.getInputLine
-      $ mconcat
+    H.getInputLine $
+      mconcat
         [ "[",
           show currentVersion,
           " -> ",
@@ -406,12 +407,12 @@ discuss :: Text -> IterT ()
 discuss prompt = do
   getHistoryHead >>= \case
     Nothing -> return ()
-    Just code -> H.handleInterrupt (outputText "Cancelled.")
-      $ H.withInterrupt
-      $ do
-        outputText ""
-        oneDiscussionStep prompt code >>= (outputText . blue)
-        dumpPerformanceLogs (Just "")
+    Just code -> H.handleInterrupt (outputText "Cancelled.") $
+      H.withInterrupt $
+        do
+          outputText ""
+          oneDiscussionStep prompt code >>= (outputText . blue)
+          dumpPerformanceLogs (Just "")
 
 styleGuidelines :: [Text]
 styleGuidelines =
@@ -590,28 +591,55 @@ llmOpenAiApi historyMessages (unlines -> sysPrompt) (unlines -> userPrompt) = do
               ]
         ]
       request =
-        setBearer token
-          $ HTTP.setRequestBodyJSON
+        setBearer token $
+          HTTP.setRequestBodyJSON
             (Aeson.object body)
             "POST https://api.groq.com/openai/v1/chat/completions"
 
+  t0 <- liftIO Time.getCurrentTime
   resp <- HTTP.getResponseBody <$> HTTP.httpLBS request
+  t1 <- liftIO Time.getCurrentTime
 
-  pure case Aeson.decode @OpenAiResult resp of
-    Just OpenAiResult {choices} -> case head choices of
-      Just Choice {message} -> Main.content message
-      Nothing -> ""
-    Nothing -> ""
+  case Aeson.decode @OpenAiResult resp of
+    Just result@OpenAiResult {choices} -> case head choices of
+      Just Choice {message} -> do
+        pushPerf
+          [ showPerf
+              model
+              t0
+              t1
+              PerformanceStats
+                { timeGenerated = completion_time $ usage result,
+                  tokensGenerated = completion_tokens $ usage result,
+                  timeProcessed = prompt_time $ usage result,
+                  tokensProcessed = prompt_tokens $ usage result
+                }
+          ]
+        pure $ Main.content message
+      Nothing -> pure ""
+    Nothing -> pure ""
 
 data OpenAiResult = OpenAiResult
   { id :: Text,
     object :: Text,
     created :: Int,
     model :: Text,
-    choices :: [Choice]
+    choices :: [Choice],
+    usage :: Usage
   }
   deriving stock (Show, Generic)
   deriving anyclass (Aeson.FromJSON)
+
+data Usage = Usage
+  { prompt_time :: Double,
+    prompt_tokens :: Int,
+    completion_time :: Double,
+    completion_tokens :: Int,
+    total_time :: Double,
+    total_tokens :: Int
+  }
+  deriving stock (Show, Generic)
+  deriving anyclass (Aeson.FromJSON, Aeson.ToJSON)
 
 data Choice = Choice
   { index :: Int,
