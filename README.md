@@ -28,8 +28,7 @@ feedback (e.g. compilers and test suites) into the LLM before triggering
 
 By default, `iter` uses `mixtral-8x7b-32768`, a 32k sequence length MoE
 of 7b parameter language models from [Mistral AI](https://mistral.ai/).
-Use `--config` (see `demos/` for examples) to change this choice to
-`llama2-70b-4096` (the other available model at the time of writing).
+Use `--config` (see `demos/` for examples) to change this choice to one of the other available models.
 
 ## development
 
