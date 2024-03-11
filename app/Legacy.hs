@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -15,17 +14,13 @@ import Data.Aeson ((.=))
 import Data.Aeson as Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson (decode, object)
 import qualified Data.ByteString.Lazy.Char8 as C8 (lines)
-import qualified Data.Text as T (pack)
-import qualified Data.Time.Clock as Time (UTCTime)
-import qualified Data.Time.Clock.POSIX as Time (getCurrentTime, utcTimeToPOSIXSeconds)
-import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
+import qualified Data.Time.Clock.POSIX as Time (getCurrentTime)
 import qualified Network.HTTP.Simple as HTTP
   ( getResponseBody,
     httpLBS,
     setRequestBodyJSON,
   )
 import Protolude
-import qualified Text.Printf as Printf (printf)
 
 data HistoryMessage = HistoryMessage
   { userPrompt :: Text,
@@ -43,15 +38,6 @@ newtype Content = Content {content :: Text}
   deriving anyclass (Aeson.FromJSON)
 
 newtype Stats = Stats {stats :: PerformanceStats}
-  deriving stock (Show, Generic)
-  deriving anyclass (Aeson.FromJSON)
-
-data PerformanceStats = PerformanceStats
-  { timeGenerated :: Double,
-    tokensGenerated :: Int,
-    timeProcessed :: Double,
-    tokensProcessed :: Int
-  }
   deriving stock (Show, Generic)
   deriving anyclass (Aeson.FromJSON)
 
@@ -99,28 +85,9 @@ llmLegacy historyMessages (unlines -> sysPrompt) (unlines -> userPrompt) = do
 
   lift ask >>= maybe pass (liftIO . logLlmCalls) . optsLogLlm
 
-  lift $ modify $ \case
-    Nothing -> Nothing
-    Just s@Iter {iterPerfLogs} ->
-      Just $ s {iterPerfLogs = iterPerfLogs <> perfLogs}
+  pushPerf perfLogs
 
   pure final
-
-showPerf :: Text -> Time.UTCTime -> Time.UTCTime -> PerformanceStats -> Text
-showPerf model t0 t1 PerformanceStats {timeGenerated, tokensGenerated, timeProcessed} =
-  T.pack
-    $ Printf.printf
-      "%0.3fs Tokens/s | %s | total: %ss 💤queued for %ss 👂input: %0.3fs 💬gen: %0.3fs"
-      (fromInteger (toInteger tokensGenerated) / timeGenerated)
-      model
-      (showDiffTime requestTime)
-      (showDiffTime queueTime)
-      timeProcessed
-      timeGenerated
-  where
-    showDiffTime = Time.formatTime Time.defaultTimeLocale "%3Es"
-    queueTime = requestTime - realToFrac timeGenerated - realToFrac timeProcessed
-    requestTime = Time.utcTimeToPOSIXSeconds t1 - Time.utcTimeToPOSIXSeconds t0
 
 mkHistorymessages :: [(Text, Text)] -> [HistoryMessage]
 mkHistorymessages messages =

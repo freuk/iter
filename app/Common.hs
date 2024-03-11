@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -30,7 +31,10 @@ import qualified Data.List.NonEmpty as NE
   )
 import qualified Data.List.Split as Split (splitWhen)
 import qualified Data.Map as Map (empty)
-import qualified Data.Text as T (isPrefixOf, unpack)
+import qualified Data.Text as T (isPrefixOf, pack, unpack)
+import qualified Data.Time.Clock as Time (UTCTime)
+import qualified Data.Time.Clock.POSIX as Time (utcTimeToPOSIXSeconds)
+import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
 import qualified Network.HTTP.Simple as HTTP
   ( Request,
     setRequestHeader,
@@ -39,6 +43,7 @@ import Protolude
 import System.Console.Haskeline (InputT)
 import qualified System.Console.Haskeline as H (outputStrLn)
 import qualified Text.Casing as Casing (fromHumps, toKebab)
+import qualified Text.Printf as Printf (printf)
 
 data Opts token = Opts
   { optsIcDiffArgs :: Maybe [Text],
@@ -70,6 +75,15 @@ data Iter st = Iter
     iterPerfLogs :: [Text]
   }
   deriving stock (Show, Functor)
+
+data PerformanceStats = PerformanceStats
+  { timeGenerated :: Double,
+    tokensGenerated :: Int,
+    timeProcessed :: Double,
+    tokensProcessed :: Int
+  }
+  deriving stock (Show, Generic)
+  deriving anyclass (Aeson.FromJSON)
 
 outputText :: Text -> IterT ()
 outputText = H.outputStrLn . T.unpack
@@ -181,3 +195,26 @@ indentWith c = unlines . map (c <>) . lines
 setBearer :: Text -> HTTP.Request -> HTTP.Request
 setBearer token =
   HTTP.setRequestHeader "Authorization" ["Bearer " <> encodeUtf8 token]
+
+showPerf :: Text -> Time.UTCTime -> Time.UTCTime -> PerformanceStats -> Text
+showPerf model t0 t1 PerformanceStats {timeGenerated, tokensGenerated, timeProcessed} =
+  T.pack $
+    Printf.printf
+      "%0.3fs Tokens/s | %s | total: %ss 💤queued for %ss 👂input: %0.3fs 💬gen: %0.3fs"
+      (fromInteger (toInteger tokensGenerated) / timeGenerated)
+      model
+      (showDiffTime requestTime)
+      (showDiffTime queueTime)
+      timeProcessed
+      timeGenerated
+  where
+    showDiffTime = Time.formatTime Time.defaultTimeLocale "%3Es"
+    queueTime = requestTime - realToFrac timeGenerated - realToFrac timeProcessed
+    requestTime = Time.utcTimeToPOSIXSeconds t1 - Time.utcTimeToPOSIXSeconds t0
+
+pushPerf :: [Text] -> IterT ()
+pushPerf perfLogs =
+  lift $ modify $ \case
+    Nothing -> Nothing
+    Just s@Iter {iterPerfLogs} ->
+      Just $ s {iterPerfLogs = iterPerfLogs <> perfLogs}
