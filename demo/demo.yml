@@ -1,5 +1,6 @@
 model: "mixtral-8x7b-32768"
-# model: "llama2-70b-4096"
+# model: "llama2-70b-4096" <- somewhat better at Haskell
+# model: "gemma-7b-it" <- doesn't follow the hardcoded prompts very well
 
 # these available templates get replaced in strings: {file}, {basename}
 feedback:
