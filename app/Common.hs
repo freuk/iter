@@ -100,7 +100,7 @@ defaultOpts =
     { optsIcDiffArgs = Just defaultOptsIcDiffArgs,
       optsFeedback = Map.empty,
       optsLogLlm = Nothing,
-      optsModel = "mixtral-8x7b-4096",
+      optsModel = "mixtral-8x7b-32768",
       optsToken = Nothing,
       optsLegacyApi = Just defaultOptsLegacyApi
     }
