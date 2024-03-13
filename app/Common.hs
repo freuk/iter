@@ -106,7 +106,7 @@ defaultOpts =
     }
 
 defaultOptsIcDiffArgs :: [Text]
-defaultOptsIcDiffArgs = ["-H", "--label=✖ CURRENT ✖", "--label=✔ NEW ✔", "--cols=160"]
+defaultOptsIcDiffArgs = ["-H", "--label=CURRENT", "--label=NEW", "--cols=160"]
 
 defaultOptsLegacyApi :: Bool
 defaultOptsLegacyApi = False
@@ -200,7 +200,7 @@ showPerf :: Text -> Time.UTCTime -> Time.UTCTime -> PerformanceStats -> Text
 showPerf model t0 t1 PerformanceStats {timeGenerated, tokensGenerated, timeProcessed} =
   T.pack $
     Printf.printf
-      "%0.3fs Tokens/s | %s | total: %ss 💤queued for %ss 👂input: %0.3fs 💬gen: %0.3fs"
+      "%0.3fs Tokens/s | %s | total: %ss queued for %ss input: %0.3fs gen: %0.3fs"
       (fromInteger (toInteger tokensGenerated) / timeGenerated)
       model
       (showDiffTime requestTime)

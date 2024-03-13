@@ -204,7 +204,7 @@ propose instructions numIters = do
           show currentVersion,
           " -> ",
           show (currentVersion + 1),
-          "] accept/a discard/d edit/e reflexion/r block/b undo/u xplain/x 🔁 "
+          "] accept/a discard/d edit/e reflexion/r block/b undo/u xplain/x > "
         ]
   whenJust minput $ \raw -> case NE.nonEmpty (List.words raw) of
     Nothing -> do
@@ -251,7 +251,7 @@ loop = H.handleInterrupt loop $ H.withInterrupt $ do
   version <- getVersion
   lift get >>= \case
     Nothing -> do
-      minput <- H.getInputLine "new/n <file>, open/o <file>, quit/q 🔁 "
+      minput <- H.getInputLine "new/n <file>, open/o <file>, quit/q > "
       whenJust minput $ \(List.words -> args) -> case args of
         ("q" : _) -> quit
         ("quit" : _) -> quit
@@ -273,7 +273,7 @@ loop = H.handleInterrupt loop $ H.withInterrupt $ do
           $ [ "[",
               show version,
               "] :quit/q, :reload/r :write/w, :explain/x :discuss/d :feedback/f ",
-              ":undo/u 🔁 "
+              ":undo/u > "
             ]
       whenJust minput $ \(List.words -> args) -> case args of
         (":q" : _) -> quit
